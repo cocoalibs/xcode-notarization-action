@@ -1,0 +1,53 @@
+name: 'Xcode Notarization Action'
+description: 'Runs notarytool to upload a file to Apple\'s notary service'
+branding:
+  icon: 'pen-tool'
+  color: 'green'
+
+inputs:
+  app-path:
+    description: 'Path of the software to notarize. Globbing is supported'
+    requires: true
+  staple:
+    description: 'Whether to run `stapler staple`'
+    requires: true
+    default: 'true'
+  keychain-profile:
+    description: 'notarytool --keychain-profile parameter'
+    required: true
+    default: 'notary'
+  apple-id:
+    description: 'notarytool --apple-id parameter'
+    required: true
+  password:
+    description: 'notarytool --password parameter'
+    required: true
+  team-id:
+    description: 'notarytool --team-id parameter'
+    required: true
+  xcode-path:
+    description: 'Path of the Xcode version to use'
+    required: true
+    default: '/Applications/Xcode_13.2.app' # available on both macos-11 and macos-12 environments
+
+runs:
+  using: 'composite'
+  steps:
+      run: sudo xcode-select -s ${{ inputs.xcode-path }}
+      run: |
+        # create temporary keychain
+        KEYCHAIN_PATH=$RUNNER_TEMP/notarization.keychain-db
+        KEYCHAIN_PASS=$(uuidgen)
+        security create-keychain -p "${KEYCHAIN_PASS}" ${KEYCHAIN_PATH}
+        security set-keychain-settings -lut 900 ${KEYCHAIN_PATH}
+        security unlock-keychain -p "${KEYCHAIN_PASS}" ${KEYCHAIN_PATH}
+        # import credentials from secrets
+        xcrun notarytool store-credentials "${{ inputs.keychain-profile }}" --apple-id "${{ inputs.apple-id }}" --password "${{ inputs.password }}" --team-id "${{ inputs.team-id }}" --keychain "${KEYCHAIN_PATH}"
+    - run: |
+        KEYCHAIN_PATH=$RUNNER_TEMP/notarization.keychain-db
+        xcrun notarytool submit ${{ inputs.app-path }} --keychain-profile "${{ inputs.keychain-profile }}" --keychain "${KEYCHAIN_PATH}" --wait
+    - if: ${{ inputs.staple == 'true' }}
+      run: xcrun stapler staple ${{ inputs.app-path }}
+    - if: ${{ always() }}
+      run: security delete-keychain $RUNNER_TEMP/notarization.keychain-db
+      continue-on-error: true
