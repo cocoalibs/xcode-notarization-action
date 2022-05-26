@@ -34,6 +34,7 @@ runs:
   using: 'composite'
   steps:
     - run: sudo xcode-select -s ${{ inputs.xcode-path }}
+      shell: bash
     - run: |
         # create temporary keychain
         KEYCHAIN_PATH=$RUNNER_TEMP/notarization.keychain-db
@@ -43,11 +44,15 @@ runs:
         security unlock-keychain -p "${KEYCHAIN_PASS}" ${KEYCHAIN_PATH}
         # import credentials from secrets
         xcrun notarytool store-credentials "${{ inputs.keychain-profile }}" --apple-id "${{ inputs.apple-id }}" --password "${{ inputs.password }}" --team-id "${{ inputs.team-id }}" --keychain "${KEYCHAIN_PATH}"
+      shell: bash
     - run: |
         KEYCHAIN_PATH=$RUNNER_TEMP/notarization.keychain-db
         xcrun notarytool submit ${{ inputs.app-path }} --keychain-profile "${{ inputs.keychain-profile }}" --keychain "${KEYCHAIN_PATH}" --wait
+      shell: bash
     - if: ${{ inputs.staple == 'true' }}
       run: xcrun stapler staple ${{ inputs.app-path }}
+      shell: bash
     - if: ${{ always() }}
       run: security delete-keychain $RUNNER_TEMP/notarization.keychain-db
+      shell: bash
       continue-on-error: true
