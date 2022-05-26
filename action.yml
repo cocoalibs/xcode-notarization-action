@@ -1,7 +1,7 @@
 name: 'Xcode Notarization Action'
 description: 'Runs notarytool to upload a file to Apple''s notary service'
 branding:
-  icon: 'pen-tool'
+  icon: 'award'
   color: 'green'
 
 inputs:
