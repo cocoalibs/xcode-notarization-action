@@ -28,7 +28,7 @@ inputs:
   xcode-path:
     description: 'Path of the Xcode version to use'
     required: true
-    default: '/Applications/Xcode_13.2.app' # available on both macos-11 and macos-12 environments
+    default: '/Applications/Xcode_13.2.1.app' # available on both macos-11 and macos-12 environments
 
 runs:
   using: 'composite'
